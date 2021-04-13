@@ -217,7 +217,7 @@ lstm_layers = tf.compat.v1.nn.rnn_cell.MultiRNNCell([lstm_cell] * 2)
 
 lstmOutputs, _ = tf.compat.v1.nn.static_rnn(lstm_layers, hidden, dtype=tf.float32)
 lstmLastOutput = lstmOutputs[-1]
-y_ = tf.math.add(tf.matmul(lstmLastOutput, rnnW['output']), rnnBiases['output'], name = 'y_')
+y_ = tf.nn.softmax(tf.math.add(tf.matmul(lstmLastOutput, rnnW['output']), rnnBiases['output']), name = 'y_')
 print(tf.shape(y_))
 
 # X_split = tf.split(shuff, 8, 0) # split them to time_step_size (28 arrays)
@@ -298,7 +298,6 @@ with tf.compat.v1.Session(config=session_conf) as session:
             np.random.shuffle(test_indices)
             test_indices = test_indices[0: 1000]
             summary, acc,output=session.run([merged, accuracy,y_], feed_dict={X: test_x[test_indices], Y: test_y[test_indices]})
-            print(output)
         print ("Epoch: ",epoch," Training Loss: ",c," Training Accuracy: ", acc)
         writer.add_summary(summary, epoch) # Write summary
     save_path = saver.save(session, "tfVis/logs/model.pb");
@@ -310,30 +309,30 @@ with tf.compat.v1.Session(config=session_conf) as session:
 # OUTPUT_TENSOR_NAME = 'y_:0'
 # PB_PATH="saved_model.pb"
 
-# with tf.compat.v1.gfile.FastGFile(PB_PATH, 'rb') as f:
+# with tf.compat.v1.gfile.FastGFile(PB_PATH, 'rb') as f: // to read model from saved-model format
 #     graph_def = tf.compat.v1.GraphDef()
 #     graph_def.ParseFromString(f.read())
  
 # with tf.Graph().as_default() as graph:
 #     tf.import_graph_def(graph_def, name="")
 
-with tf.compat.v1.Session(graph=tf.compat.v1.Graph()) as sess:
-    '''
-    You can provide 'tags' when saving a model,
-    in my case I provided, 'serve' tag 
-    '''
+# with tf.compat.v1.Session(graph=tf.compat.v1.Graph()) as sess:// test graph from saved format.
+#     '''
+#     You can provide 'tags' when saving a model,
+#     in my case I provided, 'serve' tag 
+#     '''
 
-    tf.compat.v1.saved_model.loader.load(sess, ['serve'], "/Users/zohairrashidmian/cnnPlusLSTM/CNNLSTM/model.pb")
-    graph = tf.compat.v1.get_default_graph()
+#     tf.compat.v1.saved_model.loader.load(sess, ['serve'], "/Users/zohairrashidmian/cnnPlusLSTM/CNNLSTM/model.pb")
+#     graph = tf.compat.v1.get_default_graph()
 
-    for op in graph.get_operations():
-        print(op.outputs)
+#     for op in graph.get_operations():
+#         print(op.outputs)
 
-    input_tensor = graph.get_tensor_by_name('serving_default_X_tf_0_c0e7e3be:0')
-    input_tensor_2 = graph.get_tensor_by_name('serving_default_Y_tf_0_ea73ae26:0')
-    output_tensor = graph.get_tensor_by_name("Const_14:0")
+#     input_tensor = graph.get_tensor_by_name('serving_default_X_tf_0_c0e7e3be:0')
+#     input_tensor_2 = graph.get_tensor_by_name('serving_default_Y_tf_0_ea73ae26:0')
+#     output_tensor = graph.get_tensor_by_name("Const_14:0")
 
-    y_pred = sess.run(output_tensor, feed_dict={input_tensor: test_x, input_tensor_2: test_y})
+#     y_pred = sess.run(output_tensor, feed_dict={input_tensor: test_x, input_tensor_2: test_y})
  
 # input_tensor = graph.get_tensor_by_name(INPUT_TENSOR_NAME)
 # input_tensor_2 = graph.get_tensor_by_name(INPUT_TENSOR_NAME_2)
